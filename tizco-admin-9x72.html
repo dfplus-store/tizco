@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Tizco Admin</title>
 <style>
-body{font-family:Arial;background:#f8fafc;margin:0}
+body{font-family:Arial,sans-serif;background:#f8fafc;margin:0}
 header{background:#0f172a;color:#fff;padding:1rem;text-align:center}
 .container{max-width:1000px;margin:auto;padding:1rem}
 .card{background:#fff;padding:1rem;border-radius:12px;margin-bottom:1rem;box-shadow:0 6px 16px rgba(0,0,0,.08)}
@@ -17,42 +17,81 @@ button{background:#25d366;color:#fff;border:none;padding:12px;border-radius:8px;
 .actions{display:flex;gap:6px}
 .actions button{padding:8px;font-size:.85rem}
 </style>
+</head>
+<body>
+
+<div id="adminContent" style="display:none">
+<header><h2>Tizco Admin Panel</h2><p>Manage Products & Stock</p></header>
+
+<div class="container">
+<div class="card">
+<h3>Add / Edit Product</h3>
+<input type="hidden" id="editIndex">
+<input id="name" placeholder="Product name">
+<select id="category">
+<option value="dress">Dress</option>
+<option value="top">Top</option>
+<option value="footwear">Footwear</option>
+</select>
+<input id="brand" placeholder="Brand">
+<input id="price" type="number" placeholder="Price">
+<input id="discount" type="number" placeholder="Discount (optional)">
+<input id="size" placeholder="Size (S, M, L, 42, 43...)">
+<input id="color" placeholder="Color (Red, Black...)">
+<input id="stock" type="number" placeholder="Stock">
+<input id="image" placeholder="Image URL">
+<button onclick="saveProduct()">Save Product</button>
+</div>
+
+<div class="card">
+<h3>Products</h3>
+<div id="productList" class="products"></div>
+</div>
+
+<div class="card">
+<h3>Export</h3>
+<button onclick="exportCSV()">Download products.csv</button>
+</div>
+
+<div class="card">
+<h3>Change Password</h3>
+<input id="oldPass" type="password" placeholder="Current password">
+<input id="secAns" placeholder="Primary school">
+<input id="newPass" type="password" placeholder="New password">
+<button onclick="changePassword()">Update Password</button>
+</div>
+</div>
+
 <script>
 const ADMIN_KEY="tizco_admin_auth";
 
+// AUTH
 function initAdminAuth(){
-  let auth = JSON.parse(localStorage.getItem(ADMIN_KEY));
+  let auth=JSON.parse(localStorage.getItem(ADMIN_KEY));
+
   if(!auth){
-    const pass = prompt("Create admin password");
-    const ans = prompt("Security question:\nWhat is your primary school?");
-    if(!pass || !ans){
-      document.body.innerHTML = "Admin setup required.";
-      return false;
-    }
-    localStorage.setItem(ADMIN_KEY, JSON.stringify({password: pass, answer: ans.toLowerCase()}));
+    const pass=prompt("Create admin password");
+    const ans=prompt("Security question:\nWhat is your primary school?");
+    if(!pass||!ans){document.body.innerHTML="<h2>Admin setup required.</h2>";return false;}
+    localStorage.setItem(ADMIN_KEY,JSON.stringify({password:pass,answer:ans.toLowerCase()}));
     alert("Admin setup complete. Reload page to login.");
+    document.body.innerHTML="<h2>Reload the page to login.</h2>";
     return false;
   }
 
-  let login = prompt("Enter admin password");
-  if(login !== auth.password){
-    alert("Wrong password!");
-    document.body.innerHTML = "Access denied.";
-    return false;
-  }
+  const login=prompt("Enter admin password");
+  if(!login || login!==auth.password){document.body.innerHTML="<h2>Wrong password. Access denied.</h2>";return false;}
 
-  let sec = prompt("Security question: What is your primary school?");
-  if(sec.toLowerCase() !== auth.answer){
-    alert("Wrong security answer!");
-    document.body.innerHTML = "Access denied.";
-    return false;
-  }
+  const sec=prompt("Security question: What is your primary school?");
+  if(!sec || sec.toLowerCase()!==auth.answer){document.body.innerHTML="<h2>Wrong answer. Access denied.</h2>";return false;}
 
+  document.getElementById("adminContent").style.display="block";
   return true;
 }
 
 if(!initAdminAuth()) throw "Access blocked";
 
+// PRODUCTS
 let products=[];
 
 function saveProduct(){
@@ -81,9 +120,11 @@ function render(){
 }
 
 function edit(i){
-  const p=products[i]; name.value=p.name;category.value=p.category;brand.value=p.brand;
-  price.value=p.price;discount.value=p.discount;size.value=p.size;color.value=p.color;
-  stock.value=p.stock;image.value=p.image;editIndex.value=i;
+  const p=products[i];
+  name.value=p.name; category.value=p.category; brand.value=p.brand;
+  price.value=p.price; discount.value=p.discount; size.value=p.size;
+  color.value=p.color; stock.value=p.stock; image.value=p.image;
+  editIndex.value=i;
 }
 
 function del(i){products.splice(i,1);render();}
@@ -98,51 +139,10 @@ function exportCSV(){
 
 function changePassword(){
   const auth=JSON.parse(localStorage.getItem(ADMIN_KEY));
-  if(oldPass.value!==auth.password||secAns.value.toLowerCase()!==auth.answer){alert("Wrong details");return;}
+  if(oldPass.value!==auth.password || secAns.value.toLowerCase()!==auth.answer){alert("Wrong details");return;}
   auth.password=newPass.value; localStorage.setItem(ADMIN_KEY,JSON.stringify(auth));
   alert("Password updated");
 }
 </script>
-</head>
-<body>
-<header>
-  <h2>Tizco – Admin Panel</h2>
-  <p>Manage products & stock</p>
-</header>
-<div class="container">
-<div class="card">
-  <h3>Add / Edit Product</h3>
-  <input type="hidden" id="editIndex">
-  <input id="name" placeholder="Product name">
-  <select id="category">
-    <option value="dress">Dress</option>
-    <option value="top">Top</option>
-    <option value="footwear">Footwear</option>
-  </select>
-  <input id="brand" placeholder="Brand">
-  <input id="price" type="number" placeholder="Price">
-  <input id="discount" type="number" placeholder="Discount (optional)">
-  <input id="size" placeholder="Size (S, M, L, 42, 43...)">
-  <input id="color" placeholder="Color (Red, Black...)">
-  <input id="stock" type="number" placeholder="Stock">
-  <input id="image" placeholder="Image URL">
-  <button onclick="saveProduct()">Save Product</button>
-</div>
-<div class="card">
-  <h3>Products</h3>
-  <div id="productList" class="products"></div>
-</div>
-<div class="card">
-  <h3>Export</h3>
-  <button onclick="exportCSV()">Download products.csv</button>
-</div>
-<div class="card">
-  <h3>Change Password</h3>
-  <input id="oldPass" type="password" placeholder="Current password">
-  <input id="secAns" placeholder="Primary school">
-  <input id="newPass" type="password" placeholder="New password">
-  <button onclick="changePassword()">Update Password</button>
-</div>
-</div>
 </body>
 </html>
