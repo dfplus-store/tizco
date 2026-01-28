@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tizco Boutique</title>
+<style>
+/* CSS for header, catalog, cart, mobile responsive, buttons */
+/* Include same CSS as previously shared for catalog, cart, fly-to-cart, toast, etc. */
+</style>
+</head>
+<body>
+<header>
+  <h2>Tizco Boutique</h2>
+  <p>Fashion & Footwear Accessories</p>
+</header>
+<div class="controls">
+  <input id="search" placeholder="Search products..." onkeyup="filterProducts()">
+  <select id="category" onchange="filterProducts()">
+    <option value="all">All</option>
+    <option value="dress">Dress</option>
+    <option value="top">Top</option>
+    <option value="footwear">Footwear</option>
+  </select>
+</div>
+<section id="catalog" class="catalog"></section>
+<button class="cart-btn" onclick="openCart()">🛒 Cart (<span id="cartCount">0</span>)</button>
+<div id="cartSidebar">
+  <div id="cartBox">
+    <h3>Your Cart</h3>
+    <div id="cartItems"></div>
+    <p id="cartTotal"></p>
+    <label>Delivery Address:</label>
+    <input id="deliveryAddress" placeholder="Enter your address">
+    <button id="checkoutBtn" class="btn" onclick="checkoutWhatsApp()">Checkout on WhatsApp</button>
+    <button onclick="continueShopping()" style="width:100%;">Continue Shopping</button>
+    <button onclick="closeCart()" style="width:100%;">Close</button>
+  </div>
+</div>
+<div id="cartBackdrop" onclick="closeCart()"></div>
+<script>
+const csvURL="products.csv";
+const WHATSAPP_NUMBER="2348012345678";
+const DELIVERY_FEE=2500;
+let products=[],cart=[],productQty={};
+function saveCart(){localStorage.setItem("tizco_cart",JSON.stringify(cart));}
+function loadCart(){const saved=localStorage.getItem("tizco_cart");if(saved){cart=JSON.parse(saved);cartCount.innerText=cart.length;}}
+function clearCart(){cart=[];localStorage.removeItem("tizco_cart");cartCount.innerText=0;}
+fetch(csvURL).then(r=>r.text()).then(data=>{
+  data.trim().split("\n").slice(1).forEach((r,idx)=>{
+    const [id,name,category,brand,price,discount,size,color,stock,image]=r.split(",");
+    products.push({id,name,category,brand,price:Number(price),discount:Number(discount)||0,size,color,stock:Number(stock),image});
+    productQty[idx]=1;
+  });
+  displayProducts(products);
+});
+function displayProducts(list){
+  catalog.innerHTML="";
+  list.forEach((p,idx)=>{
+    const finalPrice=p.discount>0?p.discount:p.price;
+    const disabled=p.stock<=0?"disabled":"";
+    const btnText=p.stock<=0?"Out of stock":"Add to Cart";
+    catalog.innerHTML+=`
+      <div class="product">
+        <img src="${p.image}">
+        <h3>${p.name}</h3>
+        <div class="meta">${p.brand} • Size: ${p.size} • Color: ${p.color}</div>
+        <div class="price">${p.discount>0? `<span style="text-decoration:line-through">₦${p.price}</span> <span>₦${p.discount}</span>` : "₦"+p.price}</div>
+        <div class="qty-box">
+          <button onclick="changeProductQty(${idx},-1)">➖</button>
+          <span id="qty-${idx}">${productQty[idx]}</span>
+          <button onclick="changeProductQty(${idx},1)">➕</button>
+        </div>
+        <button class="btn" onclick="addProductWithQty('${p.name}',${finalPrice},${idx})" ${disabled}>${btnText}</button>
+      </div>`;
+  });
+}
+function addProductWithQty(name,price,index){
+  const p=products[index];const qty=productQty[index];
+  const item=cart.find(i=>i.name===p.name && i.size===p.size && i.color===p.color);
+  if(item){if(item.qty+qty>p.stock){alert("Not enough stock");return;}item.qty+=qty;}
+  else{cart.push({name:p.name,size:p.size,color:p.color,price,qty});}
+  cartCount.innerText=cart.length; productQty[index]=1; document.getElementById(`qty-${index}`).innerText=1; saveCart();
+}
+function checkoutWhatsApp(){
+  if(cart.length===0) return;
+  const address=deliveryAddress.value.trim();
+  if(!address){alert("Enter delivery address"); return;}
+  const orderID="TIZ-"+Date.now(); let msg=`Hello, I want to order.%0AOrder Ref: ${orderID}%0AAddress: ${address}%0A%0A`; let subtotal=0;
+  cart.forEach((i,n)=>{
+    const t=i.price*i.qty; subtotal+=t;
+    msg+=`${n+1}. ${i.name} | Size: ${i.size} | Color: ${i.color} | Qty: ${i.qty} = ₦${t}%0A%0A`;
+    const prodIndex=products.findIndex(p=>p.name===i.name && p.size===i.size && p.color===i.color);
+    if(prodIndex>=0){products[prodIndex].stock-=i.qty; if(products[prodIndex].stock<0)products[prodIndex].stock=0;}
+  });
+  msg+=`Subtotal: ₦${subtotal}%0ADelivery: ₦${DELIVERY_FEE}%0ATOTAL: ₦${subtotal+DELIVERY_FEE}`;
+  window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`,"_blank");
+  clearCart(); closeCart(); displayProducts(products); saveCart();
+}
+// Hidden admin CTRL+ALT+A
+document.addEventListener("keydown",e=>{
+  if(e.ctrlKey && e.altKey && e.key.toLowerCase()==="a"){
+    const code=prompt("Admin access code");
+    if(code==="TIZCO"){location.href="tizco-admin-9x72.html";}
+  }
+});
+window.onload=()=>{loadCart();}
+</script>
+</body>
+</html>

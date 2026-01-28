@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tizco Admin</title>
+<style>
+body{font-family:Arial;background:#f8fafc;margin:0}
+header{background:#0f172a;color:#fff;padding:1rem;text-align:center}
+.container{max-width:1000px;margin:auto;padding:1rem}
+.card{background:#fff;padding:1rem;border-radius:12px;margin-bottom:1rem;box-shadow:0 6px 16px rgba(0,0,0,.08)}
+input,select{width:100%;padding:10px;margin-top:6px;border-radius:8px;border:1px solid #cbd5e1}
+button{background:#25d366;color:#fff;border:none;padding:12px;border-radius:8px;cursor:pointer;width:100%;margin-top:10px}
+.products{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:1rem}
+.product{border:1px solid #e2e8f0;border-radius:10px;padding:10px}
+.product img{width:100%;height:120px;object-fit:cover;border-radius:8px}
+.actions{display:flex;gap:6px}
+.actions button{padding:8px;font-size:.85rem}
+</style>
+<script>
+const ADMIN_KEY="tizco_admin_auth";
+(function initAuth(){
+  const auth=JSON.parse(localStorage.getItem(ADMIN_KEY));
+  if(!auth){
+    const pass=prompt("Create admin password");
+    const ans=prompt("Security question:\nWhat is your primary school?");
+    if(!pass||!ans){document.body.innerHTML="Setup required";return;}
+    localStorage.setItem(ADMIN_KEY,JSON.stringify({password:pass,answer:ans.toLowerCase()}));
+    alert("Admin setup complete");
+  }else{
+    const login=prompt("Enter admin password");
+    if(login!==auth.password){document.body.innerHTML="Access denied";}
+  }
+})();
+</script>
+</head>
+<body>
+<header>
+  <h2>Tizco – Admin Panel</h2>
+  <p>Manage products & stock</p>
+</header>
+<div class="container">
+<div class="card">
+  <h3>Add / Edit Product</h3>
+  <input type="hidden" id="editIndex">
+  <input id="name" placeholder="Product name">
+  <select id="category">
+    <option value="dress">Dress</option>
+    <option value="top">Top</option>
+    <option value="footwear">Footwear</option>
+  </select>
+  <input id="brand" placeholder="Brand">
+  <input id="price" type="number" placeholder="Price">
+  <input id="discount" type="number" placeholder="Discount (optional)">
+  <input id="size" placeholder="Size (S, M, L, 42, 43...)">
+  <input id="color" placeholder="Color (Red, Black...)">
+  <input id="stock" type="number" placeholder="Stock">
+  <input id="image" placeholder="Image URL">
+  <button onclick="saveProduct()">Save Product</button>
+</div>
+<div class="card">
+  <h3>Products</h3>
+  <div id="productList" class="products"></div>
+</div>
+<div class="card">
+  <h3>Export</h3>
+  <button onclick="exportCSV()">Download products.csv</button>
+</div>
+<div class="card">
+  <h3>Change Password</h3>
+  <input id="oldPass" type="password" placeholder="Current password">
+  <input id="secAns" placeholder="Primary school">
+  <input id="newPass" type="password" placeholder="New password">
+  <button onclick="changePassword()">Update Password</button>
+</div>
+</div>
+<script>
+let products=[];
+function saveProduct(){
+  const p={id:Date.now(),name:name.value,category:category.value,brand:brand.value,
+  price:price.value,discount:discount.value,size:size.value,color:color.value,
+  stock:Number(stock.value),image:image.value};
+  if(editIndex.value===""){products.push(p);}else{products[editIndex.value]=p;editIndex.value="";}
+  render();
+}
+function render(){
+  productList.innerHTML="";
+  products.forEach((p,i)=>{
+    productList.innerHTML+=`
+    <div class="product">
+      <img src="${p.image}">
+      <b>${p.name}</b><br>
+      Size: ${p.size} | Color: ${p.color}<br>
+      ₦${p.discount||p.price} • Stock:${p.stock}
+      <div class="actions">
+        <button onclick="edit(${i})">Edit</button>
+        <button onclick="del(${i})">Delete</button>
+      </div>
+    </div>`;
+  });
+}
+function edit(i){
+  const p=products[i]; name.value=p.name;category.value=p.category;brand.value=p.brand;
+  price.value=p.price;discount.value=p.discount;size.value=p.size;color.value=p.color;
+  stock.value=p.stock;image.value=p.image;editIndex.value=i;
+}
+function del(i){products.splice(i,1);render();}
+function exportCSV(){
+  let csv="id,name,category,brand,price,discount,size,color,stock,image\n";
+  products.forEach(p=>csv+=`${p.id},${p.name},${p.category},${p.brand},${p.price},${p.discount},${p.size},${p.color},${p.stock},${p.image}\n`);
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+  a.download="products.csv"; a.click();
+}
+function changePassword(){
+  const auth=JSON.parse(localStorage.getItem(ADMIN_KEY));
+  if(oldPass.value!==auth.password||secAns.value.toLowerCase()!==auth.answer){alert("Wrong details");return;}
+  auth.password=newPass.value; localStorage.setItem(ADMIN_KEY,JSON.stringify(auth));
+  alert("Password updated");
+}
+</script>
+</body>
+</html>
