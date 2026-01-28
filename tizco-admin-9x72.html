@@ -19,19 +19,89 @@ button{background:#25d366;color:#fff;border:none;padding:12px;border-radius:8px;
 </style>
 <script>
 const ADMIN_KEY="tizco_admin_auth";
-(function initAuth(){
-  const auth=JSON.parse(localStorage.getItem(ADMIN_KEY));
+
+function initAdminAuth(){
+  let auth = JSON.parse(localStorage.getItem(ADMIN_KEY));
   if(!auth){
-    const pass=prompt("Create admin password");
-    const ans=prompt("Security question:\nWhat is your primary school?");
-    if(!pass||!ans){document.body.innerHTML="Setup required";return;}
-    localStorage.setItem(ADMIN_KEY,JSON.stringify({password:pass,answer:ans.toLowerCase()}));
-    alert("Admin setup complete");
-  }else{
-    const login=prompt("Enter admin password");
-    if(login!==auth.password){document.body.innerHTML="Access denied";}
+    const pass = prompt("Create admin password");
+    const ans = prompt("Security question:\nWhat is your primary school?");
+    if(!pass || !ans){
+      document.body.innerHTML = "Admin setup required.";
+      return false;
+    }
+    localStorage.setItem(ADMIN_KEY, JSON.stringify({password: pass, answer: ans.toLowerCase()}));
+    alert("Admin setup complete. Reload page to login.");
+    return false;
   }
-})();
+
+  let login = prompt("Enter admin password");
+  if(login !== auth.password){
+    alert("Wrong password!");
+    document.body.innerHTML = "Access denied.";
+    return false;
+  }
+
+  let sec = prompt("Security question: What is your primary school?");
+  if(sec.toLowerCase() !== auth.answer){
+    alert("Wrong security answer!");
+    document.body.innerHTML = "Access denied.";
+    return false;
+  }
+
+  return true;
+}
+
+if(!initAdminAuth()) throw "Access blocked";
+
+let products=[];
+
+function saveProduct(){
+  const p={id:Date.now(),name:name.value,category:category.value,brand:brand.value,
+  price:price.value,discount:discount.value,size:size.value,color:color.value,
+  stock:Number(stock.value),image:image.value};
+  if(editIndex.value===""){products.push(p);}else{products[editIndex.value]=p;editIndex.value="";}
+  render();
+}
+
+function render(){
+  productList.innerHTML="";
+  products.forEach((p,i)=>{
+    productList.innerHTML+=`
+    <div class="product">
+      <img src="${p.image}">
+      <b>${p.name}</b><br>
+      Size: ${p.size} | Color: ${p.color}<br>
+      ₦${p.discount||p.price} • Stock:${p.stock}
+      <div class="actions">
+        <button onclick="edit(${i})">Edit</button>
+        <button onclick="del(${i})">Delete</button>
+      </div>
+    </div>`;
+  });
+}
+
+function edit(i){
+  const p=products[i]; name.value=p.name;category.value=p.category;brand.value=p.brand;
+  price.value=p.price;discount.value=p.discount;size.value=p.size;color.value=p.color;
+  stock.value=p.stock;image.value=p.image;editIndex.value=i;
+}
+
+function del(i){products.splice(i,1);render();}
+
+function exportCSV(){
+  let csv="id,name,category,brand,price,discount,size,color,stock,image\n";
+  products.forEach(p=>csv+=`${p.id},${p.name},${p.category},${p.brand},${p.price},${p.discount},${p.size},${p.color},${p.stock},${p.image}\n`);
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+  a.download="products.csv"; a.click();
+}
+
+function changePassword(){
+  const auth=JSON.parse(localStorage.getItem(ADMIN_KEY));
+  if(oldPass.value!==auth.password||secAns.value.toLowerCase()!==auth.answer){alert("Wrong details");return;}
+  auth.password=newPass.value; localStorage.setItem(ADMIN_KEY,JSON.stringify(auth));
+  alert("Password updated");
+}
 </script>
 </head>
 <body>
@@ -74,50 +144,5 @@ const ADMIN_KEY="tizco_admin_auth";
   <button onclick="changePassword()">Update Password</button>
 </div>
 </div>
-<script>
-let products=[];
-function saveProduct(){
-  const p={id:Date.now(),name:name.value,category:category.value,brand:brand.value,
-  price:price.value,discount:discount.value,size:size.value,color:color.value,
-  stock:Number(stock.value),image:image.value};
-  if(editIndex.value===""){products.push(p);}else{products[editIndex.value]=p;editIndex.value="";}
-  render();
-}
-function render(){
-  productList.innerHTML="";
-  products.forEach((p,i)=>{
-    productList.innerHTML+=`
-    <div class="product">
-      <img src="${p.image}">
-      <b>${p.name}</b><br>
-      Size: ${p.size} | Color: ${p.color}<br>
-      ₦${p.discount||p.price} • Stock:${p.stock}
-      <div class="actions">
-        <button onclick="edit(${i})">Edit</button>
-        <button onclick="del(${i})">Delete</button>
-      </div>
-    </div>`;
-  });
-}
-function edit(i){
-  const p=products[i]; name.value=p.name;category.value=p.category;brand.value=p.brand;
-  price.value=p.price;discount.value=p.discount;size.value=p.size;color.value=p.color;
-  stock.value=p.stock;image.value=p.image;editIndex.value=i;
-}
-function del(i){products.splice(i,1);render();}
-function exportCSV(){
-  let csv="id,name,category,brand,price,discount,size,color,stock,image\n";
-  products.forEach(p=>csv+=`${p.id},${p.name},${p.category},${p.brand},${p.price},${p.discount},${p.size},${p.color},${p.stock},${p.image}\n`);
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
-  a.download="products.csv"; a.click();
-}
-function changePassword(){
-  const auth=JSON.parse(localStorage.getItem(ADMIN_KEY));
-  if(oldPass.value!==auth.password||secAns.value.toLowerCase()!==auth.answer){alert("Wrong details");return;}
-  auth.password=newPass.value; localStorage.setItem(ADMIN_KEY,JSON.stringify(auth));
-  alert("Password updated");
-}
-</script>
 </body>
 </html>
