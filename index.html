@@ -5,8 +5,26 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Tizco Boutique</title>
 <style>
-/* CSS for header, catalog, cart, mobile responsive, buttons */
-/* Include same CSS as previously shared for catalog, cart, fly-to-cart, toast, etc. */
+body{margin:0;font-family:Arial,sans-serif;background:#f5f5f5;}
+header{background:#0f172a;color:#fff;padding:1rem;text-align:center;}
+.controls{display:flex;gap:10px;padding:10px;justify-content:center;flex-wrap:wrap;}
+.controls input, .controls select{padding:8px;border-radius:6px;border:1px solid #ccc;}
+.catalog{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;padding:16px;}
+.product{background:#fff;padding:12px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,.1);display:flex;flex-direction:column;transition:0.3s;}
+.product img{width:100%;height:150px;object-fit:cover;border-radius:10px;}
+.product h3{margin:10px 0 4px;font-size:1.1rem;}
+.meta{color:#666;font-size:.85rem;margin-bottom:6px;}
+.price{font-weight:bold;margin-bottom:6px;}
+.qty-box{display:flex;gap:4px;align-items:center;margin-bottom:6px;}
+.qty-box button{padding:4px 8px;cursor:pointer;}
+.btn{background:#25d366;color:#fff;padding:8px;border:none;border-radius:6px;font-weight:bold;cursor:pointer;transition:0.2s;}
+.btn:hover{background:#20b858;}
+.cart-btn{position:fixed;bottom:20px;right:20px;background:#0f172a;color:#fff;padding:12px 16px;border-radius:50px;border:none;z-index:100;}
+#cartSidebar{position:fixed;top:0;right:-400px;width:350px;height:100%;background:#fff;box-shadow:-4px 0 12px rgba(0,0,0,0.3);z-index:1000;padding:16px;overflow-y:auto;transition:0.3s;}
+#cartSidebar.open{right:0;}
+#cartBackdrop{position:fixed;inset:0;background:rgba(0,0,0,.2);display:none;z-index:900;}
+#cartSidebar.open + #cartBackdrop{display:block;}
+#deliveryAddress{width:100%;padding:8px;margin:8px 0;border-radius:6px;border:1px solid #ccc;}
 </style>
 </head>
 <body>
@@ -75,6 +93,7 @@ function displayProducts(list){
       </div>`;
   });
 }
+function changeProductQty(index,delta){ productQty[index]+=delta; if(productQty[index]<1) productQty[index]=1; document.getElementById(`qty-${index}`).innerText=productQty[index];}
 function addProductWithQty(name,price,index){
   const p=products[index];const qty=productQty[index];
   const item=cart.find(i=>i.name===p.name && i.size===p.size && i.color===p.color);
@@ -82,28 +101,28 @@ function addProductWithQty(name,price,index){
   else{cart.push({name:p.name,size:p.size,color:p.color,price,qty});}
   cartCount.innerText=cart.length; productQty[index]=1; document.getElementById(`qty-${index}`).innerText=1; saveCart();
 }
+function openCart(){
+  let html="",subtotal=0;
+  cart.forEach((i,idx)=>{const t=i.price*i.qty;subtotal+=t;html+=`<p>${i.name} | Size: ${i.size} | Color: ${i.color} | ₦${i.price} x ${i.qty} = ₦${t} <button onclick="removeItem(${idx})">❌</button></p>`;});
+  cartItems.innerHTML=html||"<p>Your cart is empty</p>";
+  cartTotal.innerHTML=`Subtotal: ₦${subtotal}<br>Delivery: ₦${cart.length?DELIVERY_FEE:0}<br><b>Total: ₦${subtotal+(cart.length?DELIVERY_FEE:0)}</b>`;
+  document.getElementById("cartSidebar").classList.add("open");
+}
+function closeCart(){document.getElementById("cartSidebar").classList.remove("open");}
+function continueShopping(){closeCart();catalog.scrollIntoView({behavior:"smooth"});}
+function removeItem(idx){cart.splice(idx,1);cartCount.innerText=cart.length;saveCart();openCart();}
 function checkoutWhatsApp(){
   if(cart.length===0) return;
-  const address=deliveryAddress.value.trim();
-  if(!address){alert("Enter delivery address"); return;}
-  const orderID="TIZ-"+Date.now(); let msg=`Hello, I want to order.%0AOrder Ref: ${orderID}%0AAddress: ${address}%0A%0A`; let subtotal=0;
-  cart.forEach((i,n)=>{
-    const t=i.price*i.qty; subtotal+=t;
-    msg+=`${n+1}. ${i.name} | Size: ${i.size} | Color: ${i.color} | Qty: ${i.qty} = ₦${t}%0A%0A`;
-    const prodIndex=products.findIndex(p=>p.name===i.name && p.size===i.size && p.color===i.color);
-    if(prodIndex>=0){products[prodIndex].stock-=i.qty; if(products[prodIndex].stock<0)products[prodIndex].stock=0;}
-  });
+  const address=deliveryAddress.value.trim();if(!address){alert("Enter delivery address");return;}
+  const orderID="TIZ-"+Date.now();let msg=`Hello, I want to order.%0AOrder Ref: ${orderID}%0AAddress: ${address}%0A%0A`;let subtotal=0;
+  cart.forEach((i,n)=>{const t=i.price*i.qty;subtotal+=t;msg+=`${n+1}. ${i.name} | Size: ${i.size} | Color: ${i.color} | Qty: ${i.qty} = ₦${t}%0A%0A`;
+  const prodIndex=products.findIndex(p=>p.name===i.name && p.size===i.size && p.color===i.color);if(prodIndex>=0){products[prodIndex].stock-=i.qty;if(products[prodIndex].stock<0)products[prodIndex].stock=0;}});
   msg+=`Subtotal: ₦${subtotal}%0ADelivery: ₦${DELIVERY_FEE}%0ATOTAL: ₦${subtotal+DELIVERY_FEE}`;
   window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`,"_blank");
   clearCart(); closeCart(); displayProducts(products); saveCart();
 }
-// Hidden admin CTRL+ALT+A
-document.addEventListener("keydown",e=>{
-  if(e.ctrlKey && e.altKey && e.key.toLowerCase()==="a"){
-    const code=prompt("Admin access code");
-    if(code==="TIZCO"){location.href="tizco-admin-9x72.html";}
-  }
-});
+function filterProducts(){const s=search.value.toLowerCase();const c=category.value;displayProducts(products.filter(p=>p.name.toLowerCase().includes(s)&&(c==="all"||p.category===c)));}
+document.addEventListener("keydown",e=>{if(e.ctrlKey && e.altKey && e.key.toLowerCase()==="a"){const code=prompt("Admin access code");if(code==="TIZCO"){location.href="tizco-admin-9x72.html";}}});
 window.onload=()=>{loadCart();}
 </script>
 </body>
