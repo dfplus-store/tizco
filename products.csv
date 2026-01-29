@@ -1,5 +1,5 @@
 id,name,category,brand,price,discount,size,color,stock,image
-1,Women Gown,dress,Zara,25000,22000,S,Red,3,https://ibb.co/93fPFVX4
+1,Women Gown,dress,Zara,25000,22000,S,Red,3,https://i.postimg.cc/x1Xr4b7t/DF-PLUS-12V-CHARGER-(1).jpg
 2,Women Gown,dress,Zara,22000,0,M,Red,5,images/gown-red.jpg
 3,Women Gown,dress,Zara,22000,0,L,Red,2,images/gown-red.jpg
 4,Women Gown,dress,Zara,22000,0,M,Black,4,images/gown-black.jpg
@@ -7,4 +7,5 @@ id,name,category,brand,price,discount,size,color,stock,image
 6,Men Shoes,footwear,Nike,40000,35000,42,Black,5,images/shoes-black.jpg
 7,Men Shoes,footwear,Nike,40000,35000,43,Black,3,images/shoes-black.jpg
 8,Men Shoes,footwear,Nike,40000,35000,44,White,2,images/shoes-white.jpg
+
 
